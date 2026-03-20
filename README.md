@@ -28,7 +28,9 @@ npm install
 ## Uso
 
 ```bash
-expo start
+npx expo start -c
+# Recuerda tener el servidor de Django iniciado
+# Este lo encuentras en https://github.com/jose-moncada/Backend-Movile.git
 ```
 
 Escanea el código QR con la aplicación Expo Go en tu dispositivo móvil.
