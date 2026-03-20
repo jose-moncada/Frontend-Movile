@@ -20,7 +20,7 @@ Una aplicación móvil moderna desarrollada con **Expo** para gestionar tus tare
 
 ```bash
 npm install -g expo-cli
-git clone <tu-repositorio>
+git clone https://github.com/jose-moncada/Frontend-Movile.git
 cd MiAppTareas
 npm install
 ```
@@ -42,4 +42,3 @@ Escanea el código QR con la aplicación Expo Go en tu dispositivo móvil.
 ## Autor
 
 Desarrollado por JRMM
-"# Frontend-Movile" 
