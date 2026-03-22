@@ -1,25 +1,23 @@
 import React, { useEffect, useState, useContext } from "react";
-import {
-    View,
-    Text,
-    FlatList,
-    ActivityIndicator,
-    StyleSheet,
-    Button
-} from "react-native";
+import { View, Text, FlatList, ActivityIndicator, StyleSheet, Button, Alert, TextInput } from "react-native";
 
 import { AuthContext } from "../context/AuthContext";
-import { getTasks } from "../api/apiService";
 
-// 🔐 Firebase logout
-import { signOut } from "firebase/auth";
-import { auth } from "../Firebase/firebaseConfig";
+import { getTasks, deleteTask, updateTask, createTask } from "../api/apiService";
 
-const TaskScreen = () => {
+const TaskScreen = ({ setScreen }) => {
     const { userToken, logout } = useContext(AuthContext);
 
     const [tasks, setTasks] = useState([]);
     const [loading, setLoading] = useState(true);
+
+    const [newTaskTitle, setNewTaskTitle] = useState("");
+    const [newTaskDescription, setNewTaskDescription] = useState("");
+    const [showForm, setShowForm] = useState(false);
+
+    const [editingTask, setEditingTask] = useState(null);
+    const [newTitle, setNewTitle] = useState("");
+    const [newDescription, setNewDescription] = useState("");
 
     // 🔥 Cargar tareas
     const loadTasks = async () => {
@@ -38,13 +36,95 @@ const TaskScreen = () => {
         }
     };
 
-    // 🔐 Cerrar sesión
-    const handleLogout = async () => {
+    const handleCreate = async () => {
+        if (!newTaskTitle.trim() || !newTaskDescription.trim()) {
+            Alert.alert("Error", "Todos los campos son obligatorios");
+            return;
+        }
+
         try {
-            await signOut(auth); // Firebase
-            logout(); // Contexto
+            const data = {
+                titulo: newTaskTitle,
+                descripcion: newTaskDescription,
+            };
+
+            const response = await createTask(data, userToken);
+
+            // 🔥 agregar al inicio de la lista
+            setTasks((prev) => [
+                {
+                    id: response.id,
+                    ...data,
+                },
+                ...prev,
+            ]);
+
+            // reset
+            setNewTaskTitle("");
+            setNewTaskDescription("");
+            setShowForm(false);
+
         } catch (error) {
-            console.log("ERROR LOGOUT:", error);
+            console.log("ERROR CREATE:", error);
+        }
+    };
+
+    const handleDelete = (taskId) => {
+        Alert.alert(
+            "Eliminar tarea",
+            "¿Seguro que quieres eliminar esta tarea?",
+            [
+                { text: "Cancelar", style: "cancel" },
+                {
+                    text: "Eliminar",
+                    style: "destructive",
+                    onPress: async () => {
+                        try {
+                            await deleteTask(taskId, userToken);
+
+                            setTasks((prevTasks) =>
+                                prevTasks.filter((task) => task.id !== taskId)
+                            );
+                        } catch (error) {
+                            console.log("ERROR:", error);
+                        }
+                    },
+                },
+            ]
+        );
+    };
+
+    const startEditing = (task) => {
+        setEditingTask(task.id);
+        setNewTitle(task.titulo);
+        setNewDescription(task.descripcion);
+    };
+
+    const handleUpdate = async () => {
+        try {
+            const updatedData = {
+                titulo: newTitle,
+                descripcion: newDescription,
+            };
+
+            await updateTask(editingTask, updatedData, userToken);
+
+            // 🔥 Actualizar estado local
+            setTasks((prevTasks) =>
+                prevTasks.map((task) =>
+                    task.id === editingTask
+                        ? { ...task, ...updatedData }
+                        : task
+                )
+            );
+
+            // Reset
+            setEditingTask(null);
+            setNewTitle("");
+            setNewDescription("");
+
+        } catch (error) {
+            console.log("ERROR UPDATE:", error);
         }
     };
 
@@ -67,19 +147,42 @@ const TaskScreen = () => {
     return (
         <View style={styles.container}>
             <Text style={styles.header}>Mis tareas :)</Text>
-            <Button style={styles.cs} title="Cerrar sesión" onPress={handleLogout}/>
 
-            <FlatList
-                data={tasks}
-                keyExtractor={(item) => item.id.toString()}
+            <Button style={styles.button} title="Ver Datos del Usuario" onPress={() => setScreen("user")}/>
+            <Button style={styles.button} color="purple" title="➕ Añadir tarea" onPress={() => setShowForm(true)}/>
+
+            {showForm && (
+                <View style={styles.card}>
+                    <TextInput style={styles.input} value={newTaskTitle} onChangeText={setNewTaskTitle} placeholder="Título" placeholderTextColor="#888"/>
+                    <TextInput style={styles.input} value={newTaskDescription} onChangeText={setNewTaskDescription} placeholder="Descripción" placeholderTextColor="#888"/>
+                    <Button title="Crear" color="green" onPress={handleCreate} />
+                    <Button title="Cancelar" color="red" onPress={() => setShowForm(false)} />
+                </View>
+            )}
+
+            <FlatList data={tasks} keyExtractor={(item) => item.id.toString()}
+
                 ListEmptyComponent={
                     <Text style={styles.empty}>No hay tareas</Text>
                 }
+
                 renderItem={({ item }) => (
                     <View style={styles.card}>
-                        <Text style={styles.title}>{item.titulo}</Text>
-                        <Text style={styles.description}>{item.descripcion}</Text>
-                        
+                        {editingTask === item.id ? (
+                            <>
+                                <TextInput style={styles.input} value={newTitle} onChangeText={setNewTitle} placeholder="Título" placeholderTextColor="#888"/>
+                                <TextInput style={styles.input} onChangeText={setNewDescription} value={newDescription} placeholder="Descripción" placeholderTextColor="#888"/>
+                                <Button style={styles.button} title="Guardar" color="green" onPress={handleUpdate}/>
+                                <Button style={styles.button} title="Cancelar" color="red" onPress={() => setEditingTask(null)}/>
+                            </>
+                        ) : (
+                            <>
+                                <Text style={styles.title}>{item.titulo}</Text>
+                                <Text style={styles.description}>{item.descripcion}</Text>
+                                <Button style={styles.button} title="Editar" color="green" onPress={() => startEditing(item)}/>
+                                <Button style={styles.button} title="Eliminar" color="red" onPress={() => handleDelete(item.id)}/>
+                            </>
+                        )}
                     </View>
                 )}
             />
@@ -126,6 +229,7 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: "#b0b0b0",
         lineHeight: 20,
+        marginBottom: 20,
     },
     empty: {
         textAlign: "center",
@@ -133,6 +237,13 @@ const styles = StyleSheet.create({
         fontSize: 16,
         marginTop: 40,
     },
+    input: {
+        backgroundColor: "#333",
+        color: "#fff",
+        padding: 10,
+        borderRadius: 6,
+        marginBottom: 10,
+    }
 });
 
 export default TaskScreen;
