@@ -1,13 +1,5 @@
 import React, { useState, useContext } from "react";
-import {
-    View,
-    Text,
-    Button,
-    StyleSheet,
-    ActivityIndicator,
-    Alert,
-    TextInput
-} from "react-native";
+import { View, Text, Button, StyleSheet, ActivityIndicator, Alert, TextInput } from "react-native";
 
 import { AuthContext } from "../context/AuthContext";
 
@@ -56,10 +48,8 @@ const LoginScreen = () => {
 
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>
-                ADSO gestor de tareas
-            </Text>
-
+            <Text style={styles.title}>ADSO</Text>
+            <Text style={styles.title}>Sistema de Gestión de Tareas</Text>
             <TextInput
                 style={styles.input}
                 placeholder="Email"
