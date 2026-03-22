@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // AQUI SE COLOCA EL IP IPv4 QUE SE OBTIENE AL INGRESAR EL COMANDO ipconfig en CMD
-const BASE_URL = "http://192.168.100.216:8000/api/";
+const BASE_URL = "http://:8000/api/";
 
 // ========================
 //  LOGIN 
