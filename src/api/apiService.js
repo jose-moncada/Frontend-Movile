@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // AQUI SE COLOCA EL IP IPv4 QUE SE OBTIENE AL INGRESAR EL COMANDO ipconfig en CMD
-const BASE_URL = "http://:8000/api/";
+const BASE_URL = "http://10.3.146.110:8000/api/";
 
 // ========================
 //  LOGIN 
@@ -195,6 +195,42 @@ export const getUserProfile = async (token) => {
 
     } catch (error) {
         console.log("ERROR PERFIL:", error);
+        throw error;
+    }
+};
+
+// ========================
+//  SUBIR FOTO PERFIL
+// ========================
+export const uploadProfilePhoto = async (imageUri, token) => {
+    try {
+        const formData = new FormData();
+
+        formData.append("imagen", {
+            uri: imageUri,
+            name: "avatar.jpg",
+            type: "image/jpeg",
+        });
+
+        const response = await fetch(`${BASE_URL}perfil/foto/`, {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${token}`,
+                // ⚠️ NO pongas Content-Type manualmente
+            },
+            body: formData,
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || "Error al subir imagen");
+        }
+
+        return data;
+
+    } catch (error) {
+        console.log("ERROR UPLOAD:", error);
         throw error;
     }
 };

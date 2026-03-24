@@ -4,11 +4,53 @@ import { AuthContext } from "../context/AuthContext";
 import { signOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "../Firebase/firebaseConfig";
+import * as ImagePicker from "expo-image-picker";
+import { uploadProfilePhoto } from "../api/apiService";
 
 
 const UserDataScreen = ({ setScreen }) => {
     const { user, logout, userToken } = useContext(AuthContext);
     const [foto, setFoto] = useState(null);
+
+    const pickImageAndUpload = async () => {
+        try {
+            // Pedir permisos
+            const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+            if (!permission.granted) {
+                alert("Se necesitan permisos para acceder a la galería");
+                return;
+            }
+
+            // Abrir galería
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: true,
+                aspect: [1, 1],
+                quality: 1,
+            });
+
+            if (result.canceled) return;
+
+            const imageUri = result.assets[0].uri;
+
+            console.log("IMAGEN SELECCIONADA:", imageUri);
+
+            // Subir imagen
+            const response = await uploadProfilePhoto(imageUri, userToken);
+
+            console.log("RESPUESTA BACKEND:", response);
+
+            // Actualizar foto en pantalla
+            setFoto(response.url);
+
+            alert("Foto actualizada correctamente ✅");
+
+        } catch (error) {
+            console.log("ERROR SUBIENDO FOTO:", error);
+            alert("Error al subir la foto ❌");
+        }
+    };
 
     useEffect(() => {
         const loadProfile = async () => {
@@ -59,6 +101,7 @@ const UserDataScreen = ({ setScreen }) => {
             <Text style={styles.text}>Rol: {user?.rol}</Text>
             <Button title="Volver" onPress={() => setScreen("tasks")} />
             <Button title="Cerrar Sesión" color="red" onPress={handleLogout} />
+            <Button title="Cambiar Foto de Perfil" color="purple" onPress={pickImageAndUpload}/>
         </View>
     );
 };
